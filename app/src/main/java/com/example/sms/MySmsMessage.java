@@ -10,8 +10,8 @@ public class MySmsMessage {
     public MySmsMessage() {
         // Default constructor required for Firebase
     }
-    public MySmsMessage(String deviceId,String sender, String messageBody, long timestamp) {
-        this.deviceId=deviceId;
+    public MySmsMessage(String sender, String messageBody, long timestamp) {
+
         this.sender = sender;
         this.messageBody = messageBody;
         this.timestamp = timestamp;
@@ -30,8 +30,5 @@ public class MySmsMessage {
     public long getTimestamp() {
         return timestamp;
     }
-    @Exclude
-    public void setDeviceId(String deviceId) {
-        this.deviceId = deviceId;
-    }
+
 }
