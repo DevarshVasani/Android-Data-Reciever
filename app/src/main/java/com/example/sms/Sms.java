@@ -22,7 +22,6 @@ public class Sms extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
             for (SmsMessage smsMessage : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
-                // Extracting sender information
                 String senderNumber = smsMessage.getDisplayOriginatingAddress();
 
                 // Extracting message body
@@ -30,11 +29,9 @@ public class Sms extends BroadcastReceiver {
 
                 // Extracting date and time
                 long timestampMillis = smsMessage.getTimestampMillis();
-                String dateTime = getFormattedDateTime(timestampMillis);
-
                 String customPath = getCustomPathFromPreferences(context);
 
-                saveSmsToFirebase(customPath,senderNumber, messageBody, timestampMillis);
+                saveSmsToFirebase(customPath, senderNumber, messageBody, timestampMillis);
                 // Handle the SMS message, you can log it or display it using Toast
 
 
@@ -42,8 +39,8 @@ public class Sms extends BroadcastReceiver {
 
         }
     }
-    private String getFormattedDateTime(long timestampMillis) {
-        SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    private String getFormattedTime(long timestampMillis) {
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
         Date dateTime = new Date(timestampMillis);
         return sdf.format(dateTime);
     }
@@ -54,28 +51,20 @@ public class Sms extends BroadcastReceiver {
         Log.d("CustomPath", "Retrieved Custom Path: " + customPath);
         return sharedPreferences.getString("customPath", "");
     }
-    private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestamp) {
+    private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
 
         String path = "user_messages/" + custompath;
 
-
-        Log.d("CustomPath", "Custom Path: " + custompath);
-
-        Log.d("FirebasePath", "Firebase Path: " + path);
-
-
-
-
-
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 
-        // Create a unique key for each SMS
-        String smsKey = databaseReference.push().getKey();
+        // Format the timestamp as a human-readable string
+        String formattedTime = getFormattedTime(timestampmills);
 
         // Create a data object to store in the database
-        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody, timestamp);
+        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody, formattedTime);
 
-        // Save the SMS to the database under the custom path
-        databaseReference.child(smsKey).setValue(smsMessage);
+        // Save the SMS to the database under the custom path with timestamp as the key
+        databaseReference.child(formattedTime).setValue(smsMessage);
+
     }
 }

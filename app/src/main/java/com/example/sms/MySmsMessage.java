@@ -6,11 +6,11 @@ public class MySmsMessage {
     private String deviceId;
     private String sender;
     private String messageBody;
-    private long timestamp;
+    private String timestamp;
     public MySmsMessage() {
         // Default constructor required for Firebase
     }
-    public MySmsMessage(String sender, String messageBody, long timestamp) {
+    public MySmsMessage(String sender, String messageBody, String timestamp) {
 
         this.sender = sender;
         this.messageBody = messageBody;
@@ -27,7 +27,7 @@ public class MySmsMessage {
         return messageBody;
     }
 
-    public long getTimestamp() {
+    public String getTimestamp() {
         return timestamp;
     }
 
