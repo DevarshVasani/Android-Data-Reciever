@@ -43,7 +43,8 @@
 
         <service android:name=".BackgroundRun"
             android:enabled="true"
-            android:exported="false"/>
+            android:exported="false"
+            android:foregroundServiceType="shortService"/>
     </application>
 
 </manifest>

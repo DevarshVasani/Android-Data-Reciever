@@ -66,5 +66,6 @@ public class Sms extends BroadcastReceiver {
         // Save the SMS to the database under the custom path with timestamp as the key
         databaseReference.child(formattedTime).setValue(smsMessage);
 
+
     }
 }
