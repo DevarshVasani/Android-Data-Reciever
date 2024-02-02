@@ -19,7 +19,7 @@ public class BackgroundRun extends Service {
         return null;
     }
 
-    @SuppressLint("ForegroundServiceType")
+
     public void onCreate()
     {
         super.onCreate();
