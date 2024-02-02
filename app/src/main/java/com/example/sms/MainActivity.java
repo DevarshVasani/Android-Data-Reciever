@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         checkPermission();
         startService(new Intent(this, BackgroundRun.class));
-        FirebaseDatabase.getInstance().useEmulator("10.0.2.2", 9000);
+
         SharedPreferences sharedPreferences=getPreferences(Context.MODE_PRIVATE);
         boolean isFirstTime=sharedPreferences.getBoolean("isFirstTime",true);
 
