@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "86097680664",
+    "firebase_url": "https://smsstore-f0d02-default-rtdb.firebaseio.com",
+    "project_id": "smsstore-f0d02",
+    "storage_bucket": "smsstore-f0d02.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:86097680664:android:ae62b2c96260020411666d",
+        "android_client_info": {
+          "package_name": "com.example.sms"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAtAItbUVAXrClB1nkeCcOIgsS_xIz41Lo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

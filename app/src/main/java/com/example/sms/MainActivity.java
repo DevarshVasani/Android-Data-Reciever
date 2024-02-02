@@ -28,7 +28,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
         checkPermission();
         startService(new Intent(this, BackgroundRun.class));
-        FirebaseDatabase.getInstance().useEmulator("10.0.2.2", 9000);
+
         SharedPreferences sharedPreferences=getPreferences(Context.MODE_PRIVATE);
         boolean isFirstTime=sharedPreferences.getBoolean("isFirstTime",true);
 
@@ -43,6 +43,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
+        startService(new Intent(this, BackgroundRun.class));
 
     }
     private void showCustomPathDialog() {
@@ -91,7 +92,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void checkPermission(){
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-        != PackageManager.PERMISSION_GRANTED){
+                != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS},1);
         }
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
@@ -106,10 +107,8 @@ public class MainActivity extends AppCompatActivity {
                 != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS},1);
         }
-
-
-
     }
+
 
     public void onRequestPermissionsResult(int requestcode,String[] permissions,int[] grantResults){
         super.onRequestPermissionsResult(requestcode,permissions,grantResults);
