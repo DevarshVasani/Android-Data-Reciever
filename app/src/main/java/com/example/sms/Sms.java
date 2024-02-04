@@ -16,6 +16,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 import java.util.Map;
+import java.util.TimeZone;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
@@ -102,7 +103,10 @@ public class Sms extends BroadcastReceiver {
         editor.apply();
     }
     private String getFormattedTime(long timestampMillis) {
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
+        Locale locale = Locale.getDefault();
+        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a z", locale);
+
+        sdf.setTimeZone(TimeZone.getDefault());
         Date dateTime = new Date(timestampMillis);
         return sdf.format(dateTime);
     }

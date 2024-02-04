@@ -47,8 +47,8 @@ public class BackgroundRun extends Service {
     }
     private Notification createNotification() {
         return new NotificationCompat.Builder(this, "my_channel")
-                .setContentTitle("App Running yes")
-                .setContentText("Performing john wick")
+                .setContentTitle("SMS")
+                .setContentText("SMS Sent To Firebase")
                 .setSmallIcon(R.drawable.ic_launcher_background)
                 .build();
     }
