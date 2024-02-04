@@ -15,44 +15,91 @@ import android.widget.Toast;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
+import java.util.Map;
+
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class Sms extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        Bundle bundle = intent.getExtras();
-        if (bundle != null) {
-            Object[] pdus = (Object[]) bundle.get("pdus");
-            if (pdus != null) {
-                SmsMessage[] messages = new SmsMessage[pdus.length];
-                StringBuilder fullMessageBuilder = new StringBuilder();
+        if (intent.getAction() != null && intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+            Bundle bundle = intent.getExtras();
+            if (bundle != null) {
+                Object[] pdus = (Object[]) bundle.get("pdus");
+                if (pdus != null) {
+                    // Process each SMS message
+                    for (Object pdu : pdus) {
+                        SmsMessage message = SmsMessage.createFromPdu((byte[]) pdu);
 
-                for (int i = 0; i < pdus.length; i++) {
-                    messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                        // Extract message details
+                        String senderNumber = message.getDisplayOriginatingAddress();
+                        String messageBody = message.getMessageBody();
+                        long timestampMillis = message.getTimestampMillis();
 
-                    // Extracting message body
-                    String messageBody = messages[i].getMessageBody();
+                        // Log the details
+                        String smsInfo = "From: " + senderNumber +
+                                "\nMessage: " + messageBody + "\nReceived at: " + timestampMillis;
+                        Log.d("OPPO", "onReceive: " + smsInfo);
 
-                    // Append the message body to the StringBuilder
-                    fullMessageBuilder.append(messageBody);
-
-                    // Extracting date and time
-                    long timestampMillis = messages[i].getTimestampMillis();
-
-                    // Handle the SMS message, you can log it or display it using Toast
-                    String smsInfo = "From: " + messages[i].getDisplayOriginatingAddress() +
-                            "\nMessage: " + messageBody + "\nReceived at: " + timestampMillis;
-                    Log.d("OPPO", "onReceive: " + smsInfo);
+                        // Save the message to local storage for later processing
+                        saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
+                        compareStoredSms(context);
+                    }
                 }
-
-                // After looping through all parts, save the full concatenated message to Firebase
-                String fullMessage = fullMessageBuilder.toString();
-                String senderNumber = messages[0].getDisplayOriginatingAddress(); // Assuming the sender is the same for all parts
-                String customPath = getCustomPathFromPreferences(context);
-                saveSmsToFirebase(customPath, senderNumber, fullMessage, messages[0].getTimestampMillis());
             }
         }
+    }
+    private void saveSmsToLocalStorage(Context context, String sender, String messageBody, long timestampMillis) {
+        // Use a local database, shared preferences, or another storage mechanism to save the SMS
+        // This example uses SharedPreferences for simplicity
+        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        // Create a unique key for each SMS based on timestamp
+        String smsKey = String.valueOf(timestampMillis);
+
+        // Store SMS details in SharedPreferences
+        editor.putString("smsSender_" + smsKey, sender);
+        editor.putString("smsBody_" + smsKey, messageBody);
+        editor.putLong("smsTimestamp_" + smsKey, timestampMillis);
+
+        editor.apply();
+    }
+    private void compareStoredSms(Context context) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
+        Map<String, ?> allEntries = sharedPreferences.getAll();
+
+        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
+            if (entry.getKey().startsWith("smsTimestamp_")) {
+                long timestamp = Long.parseLong(entry.getKey().replace("smsTimestamp_", ""));
+                String sender = sharedPreferences.getString("smsSender_" + timestamp, "");
+                String body = sharedPreferences.getString("smsBody_" + timestamp, "");
+
+                if (isNewSms(context, sender, body)) {
+                    String customPath = getCustomPathFromPreferences(context);
+                    saveSmsToFirebase(customPath, sender, body, timestamp);
+
+                    // Update the last sent SMS content in SharedPreferences
+                    updateLastSentSmsContent(context, body);
+                }
+            }
+        }
+    }
+    private boolean isNewSms(Context context, String sender, String messageBody) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
+        String lastSentSmsContent = sharedPreferences.getString("lastSentSmsContent", "");
+
+        // Compare the content of the new SMS with the last sent SMS
+        return !messageBody.equals(lastSentSmsContent);
+    }
+    private void updateLastSentSmsContent(Context context, String content) {
+        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+
+        // Update the last sent SMS content
+        editor.putString("lastSentSmsContent", content);
+        editor.apply();
     }
     private String getFormattedTime(long timestampMillis) {
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy HH:mm:ss", Locale.getDefault());
