@@ -41,6 +41,12 @@ public class MainActivity extends AppCompatActivity {
             editor.putBoolean("isFirstTime", false);
             editor.apply();
         }
+        else {
+              Sms s1=new Sms();
+            Log.d("method called", "onCreate: ");
+              s1.compareStoredSms(getApplicationContext());
+
+        }
 
 
         startService(new Intent(this, BackgroundRun.class));

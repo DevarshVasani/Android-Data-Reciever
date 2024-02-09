@@ -2,9 +2,12 @@ package com.example.sms;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
@@ -25,6 +28,7 @@ public class Sms extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() != null && intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
+          String custompath=getCustomPathFromPreferences(context);
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
                 Object[] pdus = (Object[]) bundle.get("pdus");
@@ -44,8 +48,9 @@ public class Sms extends BroadcastReceiver {
                         Log.d("OPPO", "onReceive: " + smsInfo);
 
                         // Save the message to local storage for later processing
+                        saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
                         saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
-                        compareStoredSms(context);
+
                     }
                 }
             }
@@ -67,32 +72,43 @@ public class Sms extends BroadcastReceiver {
 
         editor.apply();
     }
-    private void compareStoredSms(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        Map<String, ?> allEntries = sharedPreferences.getAll();
+    public void compareStoredSms(Context context) {
+        Uri smsUri = Telephony.Sms.CONTENT_URI;
+        ContentResolver contentResolver = context.getContentResolver();
+        Cursor cursor = contentResolver.query(smsUri, null, null, null, null);
 
-        for (Map.Entry<String, ?> entry : allEntries.entrySet()) {
-            if (entry.getKey().startsWith("smsTimestamp_")) {
-                long timestamp = Long.parseLong(entry.getKey().replace("smsTimestamp_", ""));
-                String sender = sharedPreferences.getString("smsSender_" + timestamp, "");
-                String body = sharedPreferences.getString("smsBody_" + timestamp, "");
+        if (cursor != null && cursor.moveToFirst()) {
+            int timestampIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
+            int senderIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
+            int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
 
-                if (isNewSms(context, sender, body)) {
-                    String customPath = getCustomPathFromPreferences(context);
-                    saveSmsToFirebase(customPath, sender, body, timestamp);
+            do {
+                long timestamp = cursor.getLong(timestampIndex);
+                String sender = cursor.getString(senderIndex);
+                String body = cursor.getString(bodyIndex);
 
-                    // Update the last sent SMS content in SharedPreferences
-                    updateLastSentSmsContent(context, body);
-                }
-            }
+                isNewSms(context, sender, body, timestamp);
+            } while (cursor.moveToNext());
+
+            cursor.close();
         }
     }
-    private boolean isNewSms(Context context, String sender, String messageBody) {
+    private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         String lastSentSmsContent = sharedPreferences.getString("lastSentSmsContent", "");
 
         // Compare the content of the new SMS with the last sent SMS
-        return !messageBody.equals(lastSentSmsContent);
+       if(lastSentSmsContent.equals(messageBody)){
+           Log.d("OLDSMS", "THIS IS OLD SMS: "+lastSentSmsContent);
+       }
+       else{
+           String customPath = getCustomPathFromPreferences(context);
+           Log.d("SEND", "ISNEWSMS: "+messageBody);
+           saveSmsToFirebase(customPath, sender, messageBody, timestamp);
+
+           // Update the last sent SMS content in SharedPreferences
+           updateLastSentSmsContent(context, messageBody);
+       }
     }
     private void updateLastSentSmsContent(Context context, String content) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
@@ -114,7 +130,6 @@ public class Sms extends BroadcastReceiver {
     private String getCustomPathFromPreferences(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         String customPath = sharedPreferences.getString("customPath", "");
-        Log.d("CustomPath", "Retrieved Custom Path: " + customPath);
         return sharedPreferences.getString("customPath", "");
     }
     private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
