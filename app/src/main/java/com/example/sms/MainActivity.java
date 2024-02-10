@@ -42,9 +42,10 @@ public class MainActivity extends AppCompatActivity {
             editor.apply();
         }
         else {
-              Sms s1=new Sms();
+            Sms s1=new Sms();
+            s1.compareStoredSms(getApplicationContext());
             Log.d("method called", "onCreate: ");
-              s1.compareStoredSms(getApplicationContext());
+
 
         }
 

@@ -50,7 +50,7 @@ public class Sms extends BroadcastReceiver {
                         // Save the message to local storage for later processing
                         saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
                         saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
-
+                        compareStoredSms(context);
                     }
                 }
             }
@@ -95,27 +95,29 @@ public class Sms extends BroadcastReceiver {
     }
     private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        String lastSentSmsContent = sharedPreferences.getString("lastSentSmsContent", "");
+        long lastProcessedTimestamp = sharedPreferences.getLong("smsTimestamp_", 0);
 
         // Compare the content of the new SMS with the last sent SMS
-       if(lastSentSmsContent.equals(messageBody)){
-           Log.d("OLDSMS", "THIS IS OLD SMS: "+lastSentSmsContent);
-       }
+        if (timestamp <= lastProcessedTimestamp) {
+            Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
+            // Return to indicate that processing is complete for this SMS
+            return;
+        }
        else{
            String customPath = getCustomPathFromPreferences(context);
            Log.d("SEND", "ISNEWSMS: "+messageBody);
            saveSmsToFirebase(customPath, sender, messageBody, timestamp);
 
            // Update the last sent SMS content in SharedPreferences
-           updateLastSentSmsContent(context, messageBody);
+           updateLastSentSmsContent(context, timestamp);
        }
     }
-    private void updateLastSentSmsContent(Context context, String content) {
+    private void updateLastSentSmsContent(Context context, long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
         // Update the last sent SMS content
-        editor.putString("lastSentSmsContent", content);
+        editor.putLong("smsTimestamp_", timestamp);
         editor.apply();
     }
     private String getFormattedTime(long timestampMillis) {
