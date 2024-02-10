@@ -16,9 +16,12 @@ import android.util.Log;
 import android.widget.Toast;
 
 import java.text.SimpleDateFormat;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 
 import com.google.firebase.database.DatabaseReference;
@@ -48,7 +51,7 @@ public class Sms extends BroadcastReceiver {
                         Log.d("OPPO", "onReceive: " + smsInfo);
 
                         // Save the message to local storage for later processing
-                        saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
+
                         saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
                         compareStoredSms(context);
                     }
@@ -95,30 +98,20 @@ public class Sms extends BroadcastReceiver {
     }
     private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        long lastProcessedTimestamp = sharedPreferences.getLong("smsTimestamp_", 0);
+        Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
 
-        // Compare the content of the new SMS with the last sent SMS
-        if (timestamp <= lastProcessedTimestamp) {
+        // Check if this message has already been processed
+        if (!processedTimestamps.contains(String.valueOf(timestamp))) {
+            String customPath = getCustomPathFromPreferences(context);
+            Log.d("SEND", "ISNEWSMS: " + messageBody);
+            saveSmsToFirebase(customPath, sender, messageBody, timestamp);
+
+            // Update processed timestamps (add current timestamp)
+            processedTimestamps.add(String.valueOf(timestamp));
+            sharedPreferences.edit().putStringSet("smsTimestamp_", processedTimestamps).apply();
+        } else {
             Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
-            // Return to indicate that processing is complete for this SMS
-            return;
         }
-       else{
-           String customPath = getCustomPathFromPreferences(context);
-           Log.d("SEND", "ISNEWSMS: "+messageBody);
-           saveSmsToFirebase(customPath, sender, messageBody, timestamp);
-
-           // Update the last sent SMS content in SharedPreferences
-           updateLastSentSmsContent(context, timestamp);
-       }
-    }
-    private void updateLastSentSmsContent(Context context, long timestamp) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        // Update the last sent SMS content
-        editor.putLong("smsTimestamp_", timestamp);
-        editor.apply();
     }
     private String getFormattedTime(long timestampMillis) {
         Locale locale = Locale.getDefault();
