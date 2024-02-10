@@ -15,6 +15,9 @@ import android.telephony.SmsMessage;
 import android.util.Log;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+
 import java.text.SimpleDateFormat;
 import java.util.Collections;
 import java.util.Date;
@@ -24,6 +27,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TimeZone;
 
+import com.google.firebase.database.DatabaseError;
+import com.google.firebase.database.DatabaseException;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
@@ -51,9 +56,9 @@ public class Sms extends BroadcastReceiver {
                         Log.d("OPPO", "onReceive: " + smsInfo);
 
                         // Save the message to local storage for later processing
-
+                        saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
                         saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
-                        compareStoredSms(context);
+
                     }
                 }
             }
@@ -100,15 +105,18 @@ public class Sms extends BroadcastReceiver {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
 
-        // Check if this message has already been processed
-        if (!processedTimestamps.contains(String.valueOf(timestamp))) {
+        long thresholdTimestamp = System.currentTimeMillis() - (1000 * 60 * 60 * 24);
+        if (!processedTimestamps.contains(String.valueOf(timestamp)) && timestamp > thresholdTimestamp) {
             String customPath = getCustomPathFromPreferences(context);
             Log.d("SEND", "ISNEWSMS: " + messageBody);
             saveSmsToFirebase(customPath, sender, messageBody, timestamp);
 
-            // Update processed timestamps (add current timestamp)
-            processedTimestamps.add(String.valueOf(timestamp));
-            sharedPreferences.edit().putStringSet("smsTimestamp_", processedTimestamps).apply();
+            Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
+            updatedTimestamps.add(String.valueOf(timestamp));
+
+            // Save the updated set to SharedPreferences
+            sharedPreferences.edit().putStringSet("smsTimestamp_", updatedTimestamps).apply();
+
         } else {
             Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
         }
@@ -127,6 +135,8 @@ public class Sms extends BroadcastReceiver {
         String customPath = sharedPreferences.getString("customPath", "");
         return sharedPreferences.getString("customPath", "");
     }
+
+
     private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
 
         String path = "user_messages/" + custompath;
@@ -144,4 +154,5 @@ public class Sms extends BroadcastReceiver {
 
 
     }
+
 }
