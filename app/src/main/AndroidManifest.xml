@@ -41,6 +41,8 @@
         </receiver>
 
 
+
+
         <service android:name=".BackgroundRun"
             android:enabled="true"
             android:exported="false"

@@ -45,17 +45,15 @@ public class BackgroundRun extends Service {
             startService(new Intent(this, BackgroundRun.class)); // Restart the service to repeat
         }, 15 * 1000); // Delay in milliseconds (15 seconds)
 
-
-
-
-
         return START_STICKY;
     }
 
     private void updateStatusInFirebase(Context context) {
         boolean isAppForeground = isAppForeground(context); // Using the Foreground library for convenience
 
-        String custompath=getCustomPathFromPreferences(context);
+        Sms username=new Sms();
+        String custompath=username.getCustomPathFromPreferences(context);
+
         String path = "user_messages/" + custompath;
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
@@ -80,19 +78,6 @@ public class BackgroundRun extends Service {
         }
         return false;
     }
-
-    private String getCustomPathFromPreferences(Context context) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        String customPath = sharedPreferences.getString("customPath", "");
-        return sharedPreferences.getString("customPath", "");
-    }
-
-
-
-
-
-
-
 
 
     private void createNotificationChannel()

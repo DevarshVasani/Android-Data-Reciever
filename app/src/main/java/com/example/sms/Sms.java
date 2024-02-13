@@ -130,7 +130,7 @@ public class Sms extends BroadcastReceiver {
         return sdf.format(dateTime);
     }
 
-    private String getCustomPathFromPreferences(Context context) {
+    public String getCustomPathFromPreferences(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         String customPath = sharedPreferences.getString("customPath", "");
         return sharedPreferences.getString("customPath", "");
