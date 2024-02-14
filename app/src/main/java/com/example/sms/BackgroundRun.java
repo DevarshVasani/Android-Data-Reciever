@@ -17,13 +17,19 @@ import android.os.IBinder;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.lifecycle.Lifecycle;
+import androidx.lifecycle.LifecycleObserver;
+import androidx.lifecycle.OnLifecycleEvent;
+import androidx.lifecycle.ProcessLifecycleOwner;
 
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 import java.util.List;
 
-public class BackgroundRun extends Service {
+public class BackgroundRun extends Service implements LifecycleObserver {
+
+    private boolean isAppForeground = false;
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -36,7 +42,7 @@ public class BackgroundRun extends Service {
         super.onCreate();
         createNotificationChannel();
         startForeground(1,createNotification());
-
+        ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
 
     }
     public int onStartCommand(Intent intent, int flags, int startId) {
@@ -48,13 +54,25 @@ public class BackgroundRun extends Service {
         return START_STICKY;
     }
 
-    private void updateStatusInFirebase(Context context) {
-        boolean isAppForeground = isAppForeground(context); // Using the Foreground library for convenience
+    @OnLifecycleEvent(Lifecycle.Event.ON_START)
+    public void onEnterForeground() {
+        isAppForeground = true;
+    }
 
+    @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
+    public void onEnterBackground() {
+        isAppForeground = true;
+    }
+
+
+
+
+    private void updateStatusInFirebase(Context context) {
         Sms username=new Sms();
         String custompath=username.getCustomPathFromPreferences(context);
-
         String path = "user_messages/" + custompath;
+
+
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
@@ -68,16 +86,6 @@ public class BackgroundRun extends Service {
         databaseReference.child(custompath).setValue(status);
     }
 
-    boolean isAppForeground(Context context) {
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        List<ActivityManager.RunningAppProcessInfo> runningProcesses = activityManager.getRunningAppProcesses();
-        for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-            if (processInfo.processName.equals(context.getPackageName()) && processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                return true;
-            }
-        }
-        return false;
-    }
 
 
     private void createNotificationChannel()
