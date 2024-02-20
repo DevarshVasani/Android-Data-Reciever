@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         checkPermission();
-
+        startService(new Intent(this, BackgroundRun.class));
 
         SharedPreferences sharedPreferences=getPreferences(Context.MODE_PRIVATE);
         boolean isFirstTime=sharedPreferences.getBoolean("isFirstTime",true);
