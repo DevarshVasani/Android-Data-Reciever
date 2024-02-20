@@ -103,7 +103,7 @@ public class SmsJob extends JobService {
             Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
         }
     }
-    private String getFormattedTime(long timestampMillis) {
+    public String getFormattedTime(long timestampMillis) {
         Locale locale = Locale.getDefault();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a z", locale);
 
