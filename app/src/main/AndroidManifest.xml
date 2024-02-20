@@ -40,13 +40,12 @@
             </intent-filter>
         </receiver>
 
-
-
-
-        <service android:name=".BackgroundRun"
-            android:enabled="true"
+        <service android:name=".SmsJob"
             android:exported="false"
-            android:foregroundServiceType="shortService"/>
+            android:enabled="true"
+            android:permission="android.permission.BIND_JOB_SERVICE"
+            ></service>
+
     </application>
 
 </manifest>

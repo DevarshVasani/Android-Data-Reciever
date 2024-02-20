@@ -27,7 +27,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
         checkPermission();
-        startService(new Intent(this, BackgroundRun.class));
+
 
         SharedPreferences sharedPreferences=getPreferences(Context.MODE_PRIVATE);
         boolean isFirstTime=sharedPreferences.getBoolean("isFirstTime",true);
@@ -42,7 +42,7 @@ public class MainActivity extends AppCompatActivity {
             editor.apply();
         }
         else {
-            Sms s1=new Sms();
+            SmsJob s1=new SmsJob();
             s1.compareStoredSms(getApplicationContext());
             Log.d("method called", "onCreate: ");
 
@@ -50,7 +50,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        startService(new Intent(this, BackgroundRun.class));
+
 
     }
     private void showCustomPathDialog() {

@@ -1,7 +1,11 @@
 package com.example.sms;
 
 import android.app.Service;
+import android.app.job.JobInfo;
+import android.app.job.JobScheduler;
+import android.app.job.JobService;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -56,103 +60,45 @@ public class Sms extends BroadcastReceiver {
                         Log.d("OPPO", "onReceive: " + smsInfo);
 
                         // Save the message to local storage for later processing
-                        saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
-                        saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
+
+                        Bundle smsinfo=new Bundle();
+                        smsinfo.putString("sendernumber",senderNumber);
+                        smsinfo.putString("message",messageBody);
+                        smsinfo.putLong("timestamp",timestampMillis);
+
+                        ComponentName componentName=new ComponentName(context, SmsJob.class);
+                        JobInfo jobInfo = null;
+                        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+                            jobInfo = new JobInfo.Builder(123,componentName)
+                                    .setTransientExtras(smsinfo)
+                                    .setMinimumLatency(1000)
+                                    .setOverrideDeadline(10*1000)
+                                    .build();
+                        }
+
+                        JobScheduler jobScheduler=(JobScheduler)context.getSystemService(Context.JOB_SCHEDULER_SERVICE);
+                        jobScheduler.schedule(jobInfo);
+
+
+
+
+
+
+
+
+
+                       // saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
+                       // saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
 
                     }
                 }
             }
         }
     }
-    private void saveSmsToLocalStorage(Context context, String sender, String messageBody, long timestampMillis) {
-        // Use a local database, shared preferences, or another storage mechanism to save the SMS
-        // This example uses SharedPreferences for simplicity
-        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = sharedPreferences.edit();
-
-        // Create a unique key for each SMS based on timestamp
-        String smsKey = String.valueOf(timestampMillis);
-
-        // Store SMS details in SharedPreferences
-        editor.putString("smsSender_" + smsKey, sender);
-        editor.putString("smsBody_" + smsKey, messageBody);
-        editor.putLong("smsTimestamp_" + smsKey, timestampMillis);
-
-        editor.apply();
-    }
-    public void compareStoredSms(Context context) {
-        Uri smsUri = Telephony.Sms.CONTENT_URI;
-        ContentResolver contentResolver = context.getContentResolver();
-        Cursor cursor = contentResolver.query(smsUri, null, null, null, null);
-
-        if (cursor != null && cursor.moveToFirst()) {
-            int timestampIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
-            int senderIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
-            int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
-
-            do {
-                long timestamp = cursor.getLong(timestampIndex);
-                String sender = cursor.getString(senderIndex);
-                String body = cursor.getString(bodyIndex);
-
-                isNewSms(context, sender, body, timestamp);
-            } while (cursor.moveToNext());
-
-            cursor.close();
-        }
-    }
-    private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
-        SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
-
-        long thresholdTimestamp = System.currentTimeMillis() - (1000 * 60 * 60 * 24);
-        if (!processedTimestamps.contains(String.valueOf(timestamp)) && timestamp > thresholdTimestamp) {
-            String customPath = getCustomPathFromPreferences(context);
-            Log.d("SEND", "ISNEWSMS: " + messageBody);
-            saveSmsToFirebase(customPath, sender, messageBody, timestamp);
-
-            Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
-            updatedTimestamps.add(String.valueOf(timestamp));
-
-            // Save the updated set to SharedPreferences
-            sharedPreferences.edit().putStringSet("smsTimestamp_", updatedTimestamps).apply();
-
-        } else {
-            Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
-        }
-    }
-    private String getFormattedTime(long timestampMillis) {
-        Locale locale = Locale.getDefault();
-        SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a z", locale);
-
-        sdf.setTimeZone(TimeZone.getDefault());
-        Date dateTime = new Date(timestampMillis);
-        return sdf.format(dateTime);
-    }
-
     public String getCustomPathFromPreferences(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         String customPath = sharedPreferences.getString("customPath", "");
         return sharedPreferences.getString("customPath", "");
-    }
-
-
-    private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
-
-        String path = "user_messages/" + custompath;
-
-        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
-
-        // Format the timestamp as a human-readable string
-        String formattedTime = getFormattedTime(timestampmills);
-
-        // Create a data object to store in the database
-        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody, formattedTime);
-
-        // Save the SMS to the database under the custom path with timestamp as the key
-        databaseReference.child(formattedTime).setValue(smsMessage);
-
-
     }
 
 }
