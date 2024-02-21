@@ -11,6 +11,7 @@ import android.net.NetworkInfo;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
@@ -27,7 +28,7 @@ import java.util.Map;
 
 public class BackgroundRun extends Service implements LifecycleObserver {
 
-    private boolean isAppForeground = false;
+    private  boolean isAppForeground = false;
     SmsJob time=new SmsJob();
     @Nullable
     @Override
@@ -61,24 +62,37 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         isAppForeground = true;
     }
 
-    private void updateStatusInFirebase(Context context) {
+
+    public  void updateStatusInFirebase(Context context) {
         Sms username=new Sms();
         String custompath=username.getCustomPathFromPreferences(context);
         String path = "user_messages/" + custompath;
-
-
+        String statustime="";
+        long timestamp=0;
         ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
 
         String status = isAppForeground && isConnected ? "active" : "inactive";
 
-        long timestamp=System.currentTimeMillis();
-        String formattime=time.getFormattedTime(timestamp);
+        if(time.getTime()==0){
+            Log.d("CHECK", "smstime: "+time.getTime());
+            timestamp=System.currentTimeMillis();
+            statustime=time.getFormattedTime(timestamp);
+            Log.d("statustime", "NormalTime: "+statustime);
+        }
+        else {
+
+            timestamp= time.getTime();
+            Log.d("Aftersms", "aftersms:" +timestamp);
+            statustime=time.getFormattedTime(timestamp);
+            Log.d("aftersms", ": "+statustime);
+        }
+
 
         Map<String, Object> statusMap = new HashMap<>();
         statusMap.put("status", status);
-        statusMap.put("timestamp", formattime);
+        statusMap.put("timestamp", statustime);
 
         // Access your Firebase database reference
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
@@ -86,7 +100,6 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         // Update the status based on the combined state
         databaseReference.child(custompath).updateChildren(statusMap);
     }
-
     private void createNotificationChannel()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {

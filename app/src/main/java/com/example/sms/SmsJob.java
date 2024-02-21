@@ -22,8 +22,11 @@ import java.util.Set;
 import java.util.TimeZone;
 
 public class SmsJob extends JobService {
+
+
+    public long smstime=0;
     @Override
-    public boolean onStartJob(JobParameters params) {
+    public  boolean onStartJob(JobParameters params) {
 
         String custompath=getCustomPathFromPreferences(getApplicationContext());
         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
@@ -34,6 +37,8 @@ public class SmsJob extends JobService {
 
             saveSmsToFirebase(custompath,sender,message,timestamp);
             saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
+            setTime(timestamp);
+
         }
 
 
@@ -92,6 +97,7 @@ public class SmsJob extends JobService {
             String customPath = getCustomPathFromPreferences(context);
             Log.d("SEND", "ISNEWSMS: " + messageBody);
             saveSmsToFirebase(customPath, sender, messageBody, timestamp);
+            setTime(timestamp);
 
             Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
             updatedTimestamps.add(String.valueOf(timestamp));
@@ -137,11 +143,13 @@ public class SmsJob extends JobService {
 
     }
 
+public void setTime(long time){
+        smstime=time;
+}
 
-
-
-
-
+public long getTime(){
+        return smstime;
+}
 
 
 
