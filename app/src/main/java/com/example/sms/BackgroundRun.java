@@ -47,7 +47,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         new Handler().postDelayed(() -> {
             updateStatusInFirebase(this);
             startService(new Intent(this, BackgroundRun.class)); // Restart the service to repeat
-        }, 15 * 1000); // Delay in milliseconds (15 seconds)
+        }, 300 * 1000); // Delay in milliseconds (15 seconds)
         return START_STICKY;
     }
 
@@ -86,8 +86,6 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         // Update the status based on the combined state
         databaseReference.child(custompath).updateChildren(statusMap);
     }
-
-
 
     private void createNotificationChannel()
     {
