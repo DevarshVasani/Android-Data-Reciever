@@ -4,6 +4,7 @@ import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.net.Uri;
@@ -38,7 +39,9 @@ public class SmsJob extends JobService {
             saveSmsToFirebase(custompath,sender,message,timestamp);
             saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
-
+            Intent start=new Intent(this, BackgroundRun.class);
+            start.setAction("UPDATE_TIME");
+            startService(start);
         }
 
 
@@ -98,6 +101,11 @@ public class SmsJob extends JobService {
             Log.d("SEND", "ISNEWSMS: " + messageBody);
             saveSmsToFirebase(customPath, sender, messageBody, timestamp);
             setTime(timestamp);
+
+
+            Intent start=new Intent(this, BackgroundRun.class);
+            start.setAction("UPDATE_TIME");
+            startService(start);
 
             Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
             updatedTimestamps.add(String.valueOf(timestamp));

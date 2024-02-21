@@ -4,10 +4,13 @@ import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
@@ -29,6 +32,7 @@ import java.util.Map;
 public class BackgroundRun extends Service implements LifecycleObserver {
 
     private  boolean isAppForeground = false;
+
     SmsJob time=new SmsJob();
     @Nullable
     @Override
@@ -45,10 +49,16 @@ public class BackgroundRun extends Service implements LifecycleObserver {
 
     }
     public int onStartCommand(Intent intent, int flags, int startId) {
+        if(intent!=null){
+            String action=intent.getAction();
+            if("UPDATE_TIME".equals(action)){
+                updateStatusInFirebase(this);
+            }
+        }
         new Handler().postDelayed(() -> {
             updateStatusInFirebase(this);
             startService(new Intent(this, BackgroundRun.class)); // Restart the service to repeat
-        }, 300 * 1000); // Delay in milliseconds (15 seconds)
+        }, 900 * 1000); // Delay in milliseconds (15 seconds)
         return START_STICKY;
     }
 
@@ -100,6 +110,12 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         // Update the status based on the combined state
         databaseReference.child(custompath).updateChildren(statusMap);
     }
+
+
+
+
+
+
     private void createNotificationChannel()
     {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
