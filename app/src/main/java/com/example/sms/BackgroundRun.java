@@ -83,6 +83,13 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
         boolean isConnected = networkInfo != null && networkInfo.isConnected();
 
+        Intent batteryintent=context.registerReceiver(null,new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
+        int batterylevel=batteryintent.getIntExtra(BatteryManager.EXTRA_LEVEL,-1);
+        int batteryscale=batteryintent.getIntExtra(BatteryManager.EXTRA_SCALE,-1);
+        float batterypercentage=batterylevel*100/(float)batteryscale;
+
+
+
         String status = isAppForeground && isConnected ? "active" : "inactive";
 
         if(time.getTime()==0){
@@ -103,7 +110,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         Map<String, Object> statusMap = new HashMap<>();
         statusMap.put("status", status);
         statusMap.put("timestamp", statustime);
-
+        statusMap.put("battery",batterypercentage);
         // Access your Firebase database reference
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 

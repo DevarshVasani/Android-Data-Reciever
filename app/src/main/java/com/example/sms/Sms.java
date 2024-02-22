@@ -21,6 +21,7 @@ import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.work.BackoffPolicy;
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -68,8 +69,10 @@ public class Sms extends BroadcastReceiver {
 
                         ComponentName componentName=new ComponentName(context, SmsJob.class);
                         JobInfo jobInfo = null;
+
                         if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
-                            jobInfo = new JobInfo.Builder(123,componentName)
+                            int jobid=(senderNumber+timestampMillis).hashCode();
+                            jobInfo = new JobInfo.Builder(jobid,componentName)
                                     .setTransientExtras(smsinfo)
                                     .setMinimumLatency(1000)
                                     .setOverrideDeadline(10*1000)

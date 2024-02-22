@@ -12,8 +12,13 @@ import android.os.Bundle;
 import android.provider.Telephony;
 import android.util.Log;
 
+import androidx.annotation.NonNull;
+
+import com.google.firebase.database.DataSnapshot;
+import com.google.firebase.database.DatabaseError;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
+import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -102,11 +107,11 @@ public class SmsJob extends JobService {
             saveSmsToFirebase(customPath, sender, messageBody, timestamp);
             setTime(timestamp);
 
-
-            Intent start=new Intent(this, BackgroundRun.class);
-            start.setAction("UPDATE_TIME");
-            startService(start);
-
+            if(context!=null) {
+                Intent start = new Intent(context, BackgroundRun.class);
+                start.setAction("UPDATE_TIME");
+                context.startService(start);
+            }
             Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
             updatedTimestamps.add(String.valueOf(timestamp));
 
@@ -137,6 +142,7 @@ public class SmsJob extends JobService {
 
         String path = "user_messages/" + custompath;
 
+
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 
         // Format the timestamp as a human-readable string
@@ -146,8 +152,8 @@ public class SmsJob extends JobService {
         MySmsMessage smsMessage = new MySmsMessage(sender, messageBody, formattedTime);
 
         // Save the SMS to the database under the custom path with timestamp as the key
-        databaseReference.child(formattedTime).setValue(smsMessage);
 
+        databaseReference.child(formattedTime).setValue(smsMessage);
 
     }
 
