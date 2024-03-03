@@ -52,6 +52,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         if(intent!=null){
             String action=intent.getAction();
             if("UPDATE_TIME".equals(action)){
+                Log.d("INTENT", "Executed Becuase of intent: ");
                 updateStatusInFirebase(this);
             }
         }
@@ -97,6 +98,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
             timestamp=System.currentTimeMillis();
             statustime=time.getFormattedTime(timestamp);
             Log.d("statustime", "NormalTime: "+statustime);
+
         }
         else {
 

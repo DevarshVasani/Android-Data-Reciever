@@ -47,6 +47,7 @@ public class SmsJob extends JobService {
             Intent start=new Intent(this, BackgroundRun.class);
             start.setAction("UPDATE_TIME");
             startService(start);
+
         }
 
 
@@ -107,11 +108,6 @@ public class SmsJob extends JobService {
             saveSmsToFirebase(customPath, sender, messageBody, timestamp);
             setTime(timestamp);
 
-            if(context!=null) {
-                Intent start = new Intent(context, BackgroundRun.class);
-                start.setAction("UPDATE_TIME");
-                context.startService(start);
-            }
             Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
             updatedTimestamps.add(String.valueOf(timestamp));
 

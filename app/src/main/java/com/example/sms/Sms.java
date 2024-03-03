@@ -41,7 +41,6 @@ public class Sms extends BroadcastReceiver {
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() != null && intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
-          String custompath=getCustomPathFromPreferences(context);
             Bundle bundle = intent.getExtras();
             if (bundle != null) {
                 Object[] pdus = (Object[]) bundle.get("pdus");
@@ -53,7 +52,7 @@ public class Sms extends BroadcastReceiver {
                         // Extract message details
                         String senderNumber = message.getDisplayOriginatingAddress();
                         String messageBody = message.getMessageBody();
-                        long timestampMillis = message.getTimestampMillis();
+                        long timestampMillis = System.currentTimeMillis();
 
                         // Log the details
                         String smsInfo = "From: " + senderNumber +
