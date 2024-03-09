@@ -35,7 +35,7 @@ import java.util.Map;
 
 public class BackgroundRun extends Service implements LifecycleObserver {
 
-    private static final int INTERVAL = 15 * 60 * 1000;
+    private static final int INTERVAL = 1 * 60 * 1000;
     private  boolean isAppForeground = false;
     SmsJob time=new SmsJob();
 
@@ -59,16 +59,12 @@ public class BackgroundRun extends Service implements LifecycleObserver {
             String action=intent.getAction();
             if("UPDATE_TIME".equals(action)){
                 Log.d("INTENT", "Executed Becuase of intent: ");
+                checksignal();
                 updateStatusInFirebase(this);
             }
         }
         new Handler().postDelayed(() -> {
-            if (isNetworkAvailable()) {
-                network="SIGNAL AVAILABLE";
-            } else {
-                network="NO SIGNAL";
-            }
-            setnetworkstatus(network);
+            checksignal();
             updateStatusInFirebase(this);
 
             startService(new Intent(this, BackgroundRun.class)); // Restart the service to repeat
@@ -106,6 +102,16 @@ public class BackgroundRun extends Service implements LifecycleObserver {
 
     public String getnetworkstatus(){
         return signal;
+    }
+
+
+    public void checksignal(){
+        if (isNetworkAvailable()) {
+            network="SIGNAL AVAILABLE";
+        } else {
+            network="NO SIGNAL";
+        }
+        setnetworkstatus(network);
     }
 
 
