@@ -1,5 +1,6 @@
 package com.example.sms;
 
+import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationChannel;
 import android.app.NotificationManager;
@@ -14,6 +15,9 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.IBinder;
+import android.provider.Settings;
+import android.telephony.SignalStrength;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
@@ -31,9 +35,12 @@ import java.util.Map;
 
 public class BackgroundRun extends Service implements LifecycleObserver {
 
+    private static final int INTERVAL = 15 * 60 * 1000;
     private  boolean isAppForeground = false;
-
     SmsJob time=new SmsJob();
+
+    public String signal;
+    public String network="null";
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -46,7 +53,6 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         startForeground(1,createNotification());
         ProcessLifecycleOwner.get().getLifecycle().addObserver(this);
 
-
     }
     public int onStartCommand(Intent intent, int flags, int startId) {
         if(intent!=null){
@@ -57,9 +63,16 @@ public class BackgroundRun extends Service implements LifecycleObserver {
             }
         }
         new Handler().postDelayed(() -> {
+            if (isNetworkAvailable()) {
+                network="SIGNAL AVAILABLE";
+            } else {
+                network="NO SIGNAL";
+            }
+            setnetworkstatus(network);
             updateStatusInFirebase(this);
+
             startService(new Intent(this, BackgroundRun.class)); // Restart the service to repeat
-        }, 900 * 1000); // Delay in milliseconds (15 seconds)
+        }, INTERVAL); // Delay in milliseconds (15 seconds)
         return START_STICKY;
     }
 
@@ -73,6 +86,28 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         isAppForeground = true;
     }
 
+    @SuppressLint("MissingPermission")
+    //using suppresssline because permission will be asked at the time of running app for first time.
+    private boolean isNetworkAvailable() {
+        TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
+        int networkType = telephonyManager.getNetworkType();
+        boolean isSignalAvailable = networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN;
+
+        Log.d("NetworkUtils", "Network Type: " + networkType);
+
+        return isSignalAvailable;
+    }
+
+
+
+    public void setnetworkstatus(String status){
+          signal=status;
+    }
+
+    public String getnetworkstatus(){
+        return signal;
+    }
+
 
     public  void updateStatusInFirebase(Context context) {
         Sms username=new Sms();
@@ -80,9 +115,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         String path = "user_messages/" + custompath;
         String statustime="";
         long timestamp=0;
-        ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo networkInfo = connectivityManager.getActiveNetworkInfo();
-        boolean isConnected = networkInfo != null && networkInfo.isConnected();
+
 
         Intent batteryintent=context.registerReceiver(null,new IntentFilter(Intent.ACTION_BATTERY_CHANGED));
         int batterylevel=batteryintent.getIntExtra(BatteryManager.EXTRA_LEVEL,-1);
@@ -91,7 +124,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
 
 
 
-        String status = isAppForeground && isConnected ? "active" : "inactive";
+        String status = isAppForeground  ? "active" : "inactive";
 
         if(time.getTime()==0){
             Log.d("CHECK", "smstime: "+time.getTime());
@@ -108,11 +141,12 @@ public class BackgroundRun extends Service implements LifecycleObserver {
             Log.d("aftersms", ": "+statustime);
         }
 
-
+        String devicenetwork=getnetworkstatus();
         Map<String, Object> statusMap = new HashMap<>();
         statusMap.put("status", status);
         statusMap.put("timestamp", statustime);
         statusMap.put("battery",batterypercentage);
+        statusMap.put("signal",devicenetwork);
         // Access your Firebase database reference
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 

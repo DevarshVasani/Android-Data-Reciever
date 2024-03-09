@@ -66,11 +66,11 @@ public class MainActivity extends AppCompatActivity {
         builder.setPositiveButton("OK", (dialog, which) -> {
             String customPath = input.getText().toString().trim();
             Log.d("CustomPath", "User Input: " + customPath);
-            if (!TextUtils.isEmpty(customPath)) {
+            if (customPath.isEmpty()) {
                 // Save the custom path for future use
-                saveCustomPath(customPath);
+                showCustomPathDialog();
             } else {
-                Log.d("CustomPath", "Empty or Invalid Input");
+               saveCustomPath(customPath);
             }
         });
 
@@ -113,6 +113,10 @@ public class MainActivity extends AppCompatActivity {
         if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
                 != PackageManager.PERMISSION_GRANTED){
             ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS},1);
+        }
+        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
+                != PackageManager.PERMISSION_GRANTED){
+            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE},1);
         }
     }
 

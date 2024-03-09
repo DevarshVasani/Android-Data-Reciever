@@ -5,6 +5,8 @@
     <uses-feature
         android:name="android.hardware.telephony"
         android:required="false" />
+
+    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.READ_SMS"/>
     <uses-permission android:name="android.permission.RECEIVE_SMS"/>
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
@@ -41,11 +43,11 @@
             </intent-filter>
         </receiver>
 
-        <service android:name=".SmsJob"
+        <service
+            android:name=".SmsJob"
             android:exported="false"
             android:enabled="true"
-            android:permission="android.permission.BIND_JOB_SERVICE"
-            ></service>
+            android:permission="android.permission.BIND_JOB_SERVICE" />
 
         <service android:name=".BackgroundRun"
             android:enabled="true"
