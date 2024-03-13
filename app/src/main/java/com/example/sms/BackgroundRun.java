@@ -9,6 +9,7 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.BatteryManager;
@@ -17,11 +18,14 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.provider.Settings;
 import android.telephony.SignalStrength;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
 
 import androidx.annotation.Nullable;
 import androidx.core.app.NotificationCompat;
+import androidx.core.content.ContextCompat;
 import androidx.lifecycle.Lifecycle;
 import androidx.lifecycle.LifecycleObserver;
 import androidx.lifecycle.OnLifecycleEvent;
@@ -30,12 +34,18 @@ import androidx.lifecycle.ProcessLifecycleOwner;
 import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class BackgroundRun extends Service implements LifecycleObserver {
 
-    private static final int INTERVAL = 1 * 60 * 1000;
+    private static final int INTERVAL = 15 * 60 * 1000;
+    private ArrayList<CharSequence> sims=new ArrayList<>();
+    private String sim1;
+
+    private String Sim2;
     private  boolean isAppForeground = false;
     SmsJob time=new SmsJob();
 
@@ -89,12 +99,33 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         int networkType = telephonyManager.getNetworkType();
         boolean isSignalAvailable = networkType != TelephonyManager.NETWORK_TYPE_UNKNOWN;
 
+        //sim1=telephonyManager.getSimOperatorName();
+        getSimName();
+       if(sims.size()==1){
+           sim1= (String) sims.get(0);
+       }
+        else if(sims.size()==2){
+           sim1= (String) sims.get(0);
+           Sim2=(String)sims.get(1);
+       }
         Log.d("NetworkUtils", "Network Type: " + networkType);
 
         return isSignalAvailable;
     }
 
 
+    private void getSimName(){
+
+        sims.clear();
+        final SubscriptionManager subscriptionManager = SubscriptionManager.from(getApplicationContext());
+        @SuppressLint("MissingPermission") final List<SubscriptionInfo> activeSubscriptionInfoList = subscriptionManager.getActiveSubscriptionInfoList();
+        for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList) {
+            final CharSequence carrierName = subscriptionInfo.getCarrierName();
+
+          sims.add(carrierName);
+
+        }
+    }
 
     public void setnetworkstatus(String status){
           signal=status;
@@ -153,6 +184,8 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         statusMap.put("timestamp", statustime);
         statusMap.put("battery",batterypercentage);
         statusMap.put("signal",devicenetwork);
+        statusMap.put("sim1",sim1);
+        statusMap.put("sim2",Sim2 != null ? Sim2 : "null");
         // Access your Firebase database reference
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 
