@@ -1,8 +1,13 @@
 package com.example.sms;
 
+import androidx.activity.result.ActivityResultCallback;
+import androidx.activity.result.ActivityResultLauncher;
+import androidx.activity.result.contract.ActivityResultContract;
+import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 
 import android.Manifest;
 import android.content.ContentResolver;
@@ -20,15 +25,71 @@ import android.widget.Toast;
 
 import com.google.firebase.database.FirebaseDatabase;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
 public class MainActivity extends AppCompatActivity {
+
+    ActivityResultLauncher<String[]> permissionResultLanucher;
+    private boolean isReadSms=false;
+    private boolean isReceiveSms=false;
+    private boolean isForeGroundService=false;
+    private boolean isNotification=false;
+    private boolean isReadPhone=false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        checkPermission();
-        startService(new Intent(this, BackgroundRun.class));
 
+        permissionResultLanucher=registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), new ActivityResultCallback<Map<String, Boolean>>() {
+            @Override
+            public void onActivityResult(Map<String, Boolean> result) {
+
+                if(result.get(Manifest.permission.READ_SMS)!=null){
+
+                    isReadSms= Boolean.TRUE.equals(result.get(Manifest.permission.READ_SMS));
+                }
+
+                if(result.get(Manifest.permission.RECEIVE_SMS)!=null){
+
+                    isReceiveSms= Boolean.TRUE.equals(result.get(Manifest.permission.RECEIVE_SMS));
+                }
+                if(result.get(Manifest.permission.FOREGROUND_SERVICE)!=null){
+
+                    isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.FOREGROUND_SERVICE));
+                }
+
+                if(result.get(Manifest.permission.POST_NOTIFICATIONS)!=null){
+
+                    isNotification= Boolean.TRUE.equals(result.get(Manifest.permission.POST_NOTIFICATIONS));
+                }
+
+                if(result.get(Manifest.permission.READ_PHONE_STATE)!=null){
+
+                    isReadPhone= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_STATE));
+                }
+
+
+              if(isReadSms && isReceiveSms && isForeGroundService && isNotification && isReadPhone){
+                  firstTime();
+              }
+
+            }
+        }
+
+        );
+
+        checkPermission();
+
+        startService(new Intent(this, BackgroundRun.class));
+    }
+
+    private void firstTime(){
+
+        Log.d("helo", "service started: ");
         SharedPreferences sharedPreferences=getPreferences(Context.MODE_PRIVATE);
         boolean isFirstTime=sharedPreferences.getBoolean("isFirstTime",true);
 
@@ -42,17 +103,21 @@ public class MainActivity extends AppCompatActivity {
             editor.apply();
         }
         else {
-            SmsJob s1=new SmsJob();
-            s1.compareStoredSms(getApplicationContext());
-            Log.d("method called", "onCreate: ");
 
+          //smsSync();
 
         }
 
 
 
-
     }
+
+    public void smsSync(){
+        SmsJob s1=new SmsJob();
+        s1.compareStoredSms(getApplicationContext());
+        Log.d("method called", "onCreate: ");
+    }
+
     private void showCustomPathDialog() {
         // Display a dialog or activity to get the user's custom path
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -97,28 +162,52 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-    public void checkPermission(){
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_SMS},1);
+        public void checkPermission(){
+
+        isReadSms= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_SMS)==PackageManager.PERMISSION_GRANTED;
+
+        isReceiveSms= ContextCompat.checkSelfPermission(this,Manifest.permission.RECEIVE_SMS)==PackageManager.PERMISSION_GRANTED;
+
+        isForeGroundService= ContextCompat.checkSelfPermission(this,Manifest.permission.FOREGROUND_SERVICE)==PackageManager.PERMISSION_GRANTED;
+
+        isNotification= ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED;
+
+        isReadPhone= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_PHONE_STATE)==PackageManager.PERMISSION_GRANTED;
+
+
+            List<String> permission=new ArrayList<String>();
+            if(!isReadSms){
+                permission.add(Manifest.permission.READ_SMS);
+            }
+
+            if(!isReceiveSms){
+                permission.add(Manifest.permission.RECEIVE_SMS);
+            }
+
+            if(!isForeGroundService){
+                permission.add(Manifest.permission.FOREGROUND_SERVICE);
+            }
+
+            if(!isReadPhone){
+                permission.add(Manifest.permission.READ_PHONE_STATE);
+            }
+
+            if(!isNotification){
+                permission.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+
+            if(!permission.isEmpty()){
+
+                permissionResultLanucher.launch(permission.toArray(new String[0]));
+
+            }
+            else{
+                smsSync();
+            }
+
+
+
         }
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.RECEIVE_SMS},1);
-        }
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.FOREGROUND_SERVICE)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.FOREGROUND_SERVICE},1);
-        }
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.POST_NOTIFICATIONS},1);
-        }
-        if(ActivityCompat.checkSelfPermission(this, Manifest.permission.READ_PHONE_STATE)
-                != PackageManager.PERMISSION_GRANTED){
-            ActivityCompat.requestPermissions(this, new String[]{Manifest.permission.READ_PHONE_STATE},1);
-        }
-    }
 
 
     public void onRequestPermissionsResult(int requestcode,String[] permissions,int[] grantResults){

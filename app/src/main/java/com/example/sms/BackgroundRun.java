@@ -93,7 +93,7 @@ public class BackgroundRun extends Service implements LifecycleObserver {
     }
 
     @SuppressLint("MissingPermission")
-    //using suppresssline because permission will be asked at the time of running app for first time.
+    //using suppressslint because permission will be asked at the time of running app for first time.
     private boolean isNetworkAvailable() {
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         int networkType = telephonyManager.getNetworkType();

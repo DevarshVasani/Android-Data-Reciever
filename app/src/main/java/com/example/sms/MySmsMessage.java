@@ -3,7 +3,7 @@ package com.example.sms;
 import com.google.firebase.database.Exclude;
 
 public class MySmsMessage {
-    private String deviceId;
+
     private String sender;
     private String messageBody;
     private String timestamp;
@@ -16,9 +16,7 @@ public class MySmsMessage {
         this.messageBody = messageBody;
         this.timestamp = timestamp;
     }
-    public String getDeviceId() {
-        return deviceId;
-    }
+
     public String getSender() {
         return sender;
     }
