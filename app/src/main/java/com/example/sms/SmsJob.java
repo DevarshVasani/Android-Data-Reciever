@@ -41,7 +41,8 @@ public class SmsJob extends JobService {
             String message=smsData.getString("message");
             long timestamp=smsData.getLong("timestamp");
 
-            saveSmsToFirebase(custompath,sender,message,timestamp);
+            compareStoredSms(getApplicationContext());
+            //saveSmsToFirebase(custompath,sender,message,timestamp);
             saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
             Intent start=new Intent(this, BackgroundRun.class);
@@ -150,9 +151,7 @@ public class SmsJob extends JobService {
         // Save the SMS to the database under the custom path with timestamp as the key
 
         databaseReference.child(formattedTime).setValue(smsMessage);
-
     }
-
 public void setTime(long time){
         smstime=time;
 }

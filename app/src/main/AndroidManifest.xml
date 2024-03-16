@@ -43,6 +43,7 @@
             </intent-filter>
         </receiver>
 
+
         <service
             android:name=".SmsJob"
             android:exported="false"
