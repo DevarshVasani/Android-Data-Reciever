@@ -62,8 +62,7 @@ public class SmsJob extends JobService {
 
 
     private void saveSmsToLocalStorage(Context context, String sender, String messageBody, long timestampMillis) {
-        // Use a local database, shared preferences, or another storage mechanism to save the SMS
-        // This example uses SharedPreferences for simplicity
+
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
 
@@ -92,13 +91,13 @@ public class SmsJob extends JobService {
                 String sender = cursor.getString(senderIndex);
                 String body = cursor.getString(bodyIndex);
 
-                isNewSms(context, sender, body, timestamp);
+               // isNewSms(context, sender, body, timestamp);
             } while (cursor.moveToNext());
 
             cursor.close();
         }
     }
-    private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
+   /* private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
 
@@ -119,6 +118,8 @@ public class SmsJob extends JobService {
             Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
         }
     }
+
+    */
     public String getFormattedTime(long timestampMillis) {
         Locale locale = Locale.getDefault();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a z", locale);
