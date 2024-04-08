@@ -59,12 +59,13 @@ public class Sms extends BroadcastReceiver {
                                 "\nMessage: " + messageBody + "\nReceived at: " + timestampMillis;
                         Log.d("OPPO", "onReceive: " + smsInfo);
 
-                        // Save the message to local storage for later processing
+                        String fullsms=concatenateSms(intent);
 
                         Bundle smsinfo=new Bundle();
                         smsinfo.putString("sendernumber",senderNumber);
                         smsinfo.putString("message",messageBody);
                         smsinfo.putLong("timestamp",timestampMillis);
+                        smsinfo.putString("full",fullsms);
 
                         ComponentName componentName=new ComponentName(context, SmsJob.class);
                         JobInfo jobInfo = null;
@@ -96,6 +97,21 @@ public class Sms extends BroadcastReceiver {
                 }
             }
         }
+    }
+    public String concatenateSms(Intent intent) {
+        StringBuilder content = new StringBuilder();
+        Bundle bundle = intent.getExtras();
+        if (bundle != null) {
+            Object[] pdus = (Object[]) bundle.get("pdus");
+            if (pdus != null) {
+                final SmsMessage[] messages = new SmsMessage[pdus.length];
+                for (int i = 0; i < pdus.length; i++) {
+                    messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                    content.append(messages[i].getMessageBody());
+                }
+            }
+        }
+        return content.toString();
     }
     public String getCustomPathFromPreferences(Context context) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);

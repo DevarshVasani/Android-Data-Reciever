@@ -10,6 +10,7 @@ import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Telephony;
+import android.telephony.SmsMessage;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -41,8 +42,10 @@ public class SmsJob extends JobService {
             String message=smsData.getString("message");
             long timestamp=smsData.getLong("timestamp");
 
-            compareStoredSms(getApplicationContext());
-            //saveSmsToFirebase(custompath,sender,message,timestamp);
+            String fullsms=smsData.getString("full");
+           // compareStoredSms(getApplicationContext());
+            saveSmsToFirebase(custompath,sender,fullsms,timestamp);
+            Log.d("startjob", "job called when app is off: ");
             saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
             Intent start=new Intent(this, BackgroundRun.class);
@@ -61,6 +64,8 @@ public class SmsJob extends JobService {
     }
 
 
+
+
     private void saveSmsToLocalStorage(Context context, String sender, String messageBody, long timestampMillis) {
 
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
@@ -76,7 +81,7 @@ public class SmsJob extends JobService {
 
         editor.apply();
     }
-    public void compareStoredSms(Context context) {
+ /*  public void compareStoredSms(Context context) {
         Uri smsUri = Telephony.Sms.CONTENT_URI;
         ContentResolver contentResolver = context.getContentResolver();
         Cursor cursor = contentResolver.query(smsUri, null, null, null, null);
@@ -91,13 +96,13 @@ public class SmsJob extends JobService {
                 String sender = cursor.getString(senderIndex);
                 String body = cursor.getString(bodyIndex);
 
-               // isNewSms(context, sender, body, timestamp);
+                isNewSms(context, sender, body, timestamp);
             } while (cursor.moveToNext());
 
             cursor.close();
         }
     }
-   /* private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
+   private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
         Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
 
@@ -119,7 +124,9 @@ public class SmsJob extends JobService {
         }
     }
 
-    */
+
+  */
+
     public String getFormattedTime(long timestampMillis) {
         Locale locale = Locale.getDefault();
         SimpleDateFormat sdf = new SimpleDateFormat("dd-MM-yyyy hh:mm:ss a z", locale);

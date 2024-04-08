@@ -114,7 +114,7 @@ public class MainActivity extends AppCompatActivity {
 
     public void smsSync(){
         SmsJob s1=new SmsJob();
-        s1.compareStoredSms(getApplicationContext());
+        //s1.compareStoredSms(getApplicationContext());
         Log.d("method called", "onCreate: ");
     }
 
