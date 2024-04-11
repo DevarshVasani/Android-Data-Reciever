@@ -50,9 +50,9 @@ public class SmsJob extends JobService {
 
             String fullsms=smsData.getString("full");
 
-            //saveSmsToFirebase(custompath,sender,fullsms,timestamp);
+            saveSmsToFirebase(custompath,sender,fullsms,timestamp);
             Log.d("startjob", "job called when app is off: ");
-            //saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
+            saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
             Intent start=new Intent(this, BackgroundRun.class);
             start.setAction("UPDATE_TIME");
@@ -128,7 +128,7 @@ public class SmsJob extends JobService {
 
         SharedPreferences sharedPreferences = context.getSharedPreferences("com.example.sms", Context.MODE_PRIVATE);
 
-        int delay = 10000 + (int) (Math.random() * 5000); // Adjust delay as needed (milliseconds)
+        int delay = 5000; // Adjust delay as needed (milliseconds)
 
         while (!senderQueue.isEmpty() && !bodyQueue.isEmpty() && !timestampQueue.isEmpty() && !uniqueIdQueue.isEmpty()) {
             String sender = senderQueue.poll();
@@ -137,24 +137,46 @@ public class SmsJob extends JobService {
             String uniqueIdPrefix = uniqueIdQueue.poll();
 
             String formattedTime = getFormattedTime(timestamp);
-            String messageKey = formattedTime + "_" + uniqueIdPrefix;
+            assert body != null;
+            String messageHash = String.valueOf(body.hashCode());
+            String messageKey = formattedTime + "_" + messageHash;
 
             if (timestamp >= thresholdTime && !sharedPreferences.contains("smsSender_" + messageKey)) {
                 // Check if message key exists (not processed)
                 Log.d("NEWSMS", "sms is old: " + body);
 
-                // Schedule sending with a delay (separate delay for each message)
-
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        saveoldSmsToFirebase(custom, sender, body, messageKey);
-                        // Save to SharedPreferences to mark as processed (optional)
-                        saveSmsToLocalStorage(context, sender, body, timestamp);
+                        DatabaseReference messageRef = FirebaseDatabase.getInstance().getReference(custom).child(messageKey);
+                        ValueEventListener valueEventListener = new ValueEventListener() {
+                            @Override
+                            public void onDataChange(DataSnapshot dataSnapshot) {
+                                if (!dataSnapshot.exists()) {
+                                    // Message doesn't exist, send it to Firebase
+                                    saveoldSmsToFirebase(custom, sender, body, messageKey);
+                                    Intent start = new Intent(context, BackgroundRun.class);
+                                    start.setAction("UPDATE_TIME");
+                                    context.startService(start);
+                                } else {
+                                    Log.d("SEND", "SMS already sent: " + body);
+                                }
+                                // Remove listener after checking
+                                messageRef.removeEventListener(this);
+                            }
+
+                            @Override
+                            public void onCancelled(DatabaseError databaseError) {
+                                // Handle potential database errors
+                                Log.w("ERROR", "Error checking for message: ", databaseError.toException());
+                            }
+                        };
+
+                        messageRef.addListenerForSingleValueEvent(valueEventListener);
                     }
                 }, delay);
 
-                delay += 1000; // Increase delay for next message (adjust as needed)
+                 // Increase delay for next message (adjust as needed)
             }
         }
     }
