@@ -1,14 +1,13 @@
 {
   "project_info": {
-    "project_number": "86097680664",
-    "firebase_url": "https://smsstore-f0d02-default-rtdb.firebaseio.com",
-    "project_id": "smsstore-f0d02",
-    "storage_bucket": "smsstore-f0d02.appspot.com"
+    "project_number": "1033096137541",
+    "project_id": "agc-sms-af461",
+    "storage_bucket": "agc-sms-af461.appspot.com"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:86097680664:android:ae62b2c96260020411666d",
+        "mobilesdk_app_id": "1:1033096137541:android:e4d3ae6b3918ba23a68c2c",
         "android_client_info": {
           "package_name": "com.example.sms"
         }
@@ -16,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAtAItbUVAXrClB1nkeCcOIgsS_xIz41Lo"
+          "current_key": "AIzaSyANXH70lDpYHWSlSshB4Opta6bwN5mK38c"
         }
       ],
       "services": {
