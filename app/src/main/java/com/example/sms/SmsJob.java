@@ -209,6 +209,7 @@ public class SmsJob extends JobService {
         // Format the timestamp as a human-readable string
         //String formattedTime = getFormattedTime(timestampmills);
 
+
         // Create a data object to store in the database
         MySmsMessage smsMessage = new MySmsMessage(sender, messageBody,timestampmills);
 
@@ -225,6 +226,7 @@ public class SmsJob extends JobService {
         String path = "user_messages/" + custompath;
 
 
+
         DatabaseReference databaseReference = FirebaseDatabase.getInstance().getReference(path);
 
         // Format the timestamp as a human-readable string
@@ -236,6 +238,7 @@ public class SmsJob extends JobService {
         // Save the SMS to the database under the custom path with timestamp as the key
 
         databaseReference.child(formattedTime).setValue(smsMessage);
+
 
 
 

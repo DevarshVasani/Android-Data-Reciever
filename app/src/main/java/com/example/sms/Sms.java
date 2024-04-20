@@ -1,5 +1,7 @@
 package com.example.sms;
 
+import static androidx.core.content.ContextCompat.getSystemService;
+
 import android.app.Service;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -7,6 +9,7 @@ import android.app.job.JobService;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
 import android.content.ContentResolver;
+import android.telephony.TelephonyManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -16,12 +19,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 import android.widget.Toast;
-
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
-import androidx.work.BackoffPolicy;
+
 
 import java.text.SimpleDateFormat;
 import java.util.Collections;
@@ -42,6 +46,41 @@ public class Sms extends BroadcastReceiver {
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() != null && intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
             Bundle bundle = intent.getExtras();
+
+
+            int slot = bundle.getInt("slot", -1);
+            int sub = bundle.getInt("subscription", -1);
+
+            SubscriptionManager manager = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+            SubscriptionInfo i = manager.getActiveSubscriptionInfo(sub);//
+            Log.d("Extra Information", "onReceive: " + i);
+            int simSlotIndex = i.getSimSlotIndex();
+            Log.d("sim slot", "onReceive: " + simSlotIndex);
+
+            boolean network  =manager.isNetworkRoaming(sub);
+            String phonenumber = manager.getPhoneNumber(sub);//if api is greater than 33
+            Log.d("network", "onReceive: "+network);
+
+            TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            String number = tm.getLine1Number();//if api is less than 33
+            
+
+            String final_number;//add this number to the database
+            
+            if (phonenumber == "" && number != ""){//
+                final_number = number;
+            } else if (number == "" && phonenumber != "") {
+                final_number = phonenumber;
+            } else if (phonenumber!= "") {
+                final_number = phonenumber;
+
+            } else {
+                final_number = "Unable to find recievers's number";
+            }
+
+            Log.d("phone number", "onReceive: " + final_number);//this is the number that will be added to the database
+
+
             if (bundle != null) {
                 Object[] pdus = (Object[]) bundle.get("pdus");
                 if (pdus != null) {
@@ -62,11 +101,15 @@ public class Sms extends BroadcastReceiver {
                         String fullsms=concatenateSms(intent);
 
                         Bundle smsinfo=new Bundle();
+
+
+
                         smsinfo.putString("sendernumber",senderNumber);
                         smsinfo.putString("message",messageBody);
                         smsinfo.putLong("timestamp",timestampMillis);
                         smsinfo.putString("full",fullsms);
 
+                        
                         ComponentName componentName=new ComponentName(context, SmsJob.class);
                         JobInfo jobInfo = null;
 

@@ -57,6 +57,10 @@ public class MainActivity extends AppCompatActivity {
 
                     isReceiveSms= Boolean.TRUE.equals(result.get(Manifest.permission.RECEIVE_SMS));
                 }
+                if (result.get(Manifest.permission.READ_PHONE_NUMBERS)!=null){
+
+                    isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_NUMBERS));
+                }
                 if(result.get(Manifest.permission.FOREGROUND_SERVICE)!=null){
 
                     isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.FOREGROUND_SERVICE));
@@ -174,6 +178,7 @@ public class MainActivity extends AppCompatActivity {
 
         isReadPhone= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_PHONE_STATE)==PackageManager.PERMISSION_GRANTED;
 
+        isReadPhone= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_PHONE_NUMBERS)==PackageManager.PERMISSION_GRANTED;
 
             List<String> permission=new ArrayList<String>();
             if(!isReadSms){
@@ -194,6 +199,10 @@ public class MainActivity extends AppCompatActivity {
 
             if(!isNotification){
                 permission.add(Manifest.permission.POST_NOTIFICATIONS);
+            }
+
+            if (!isReadPhone){
+                permission.add(Manifest.permission.READ_PHONE_NUMBERS);
             }
 
             if(!permission.isEmpty()){
