@@ -23,9 +23,11 @@ import com.google.firebase.database.ValueEventListener;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Queue;
 import java.util.Set;
 import java.util.TimeZone;
@@ -47,10 +49,10 @@ public class SmsJob extends JobService {
             String sender=smsData.getString("sendernumber");
             String message=smsData.getString("message");
             long timestamp=smsData.getLong("timestamp");
-
+            String receiver=smsData.getString("receiver");
             String fullsms=smsData.getString("full");
 
-            saveSmsToFirebase(custompath,sender,fullsms,timestamp);
+            saveSmsToFirebase(custompath,sender,fullsms,timestamp,receiver);
             Log.d("startjob", "job called when app is off: ");
             saveSmsToLocalStorage(getApplicationContext(), sender, message, timestamp);
             setTime(timestamp);
@@ -221,7 +223,7 @@ public class SmsJob extends JobService {
 
 
     }
-    private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills) {
+    private void saveSmsToFirebase(String custompath,String sender, String messageBody, long timestampmills,String receiver) {
 
         String path = "user_messages/" + custompath;
 
@@ -233,11 +235,15 @@ public class SmsJob extends JobService {
         String formattedTime = getFormattedTime(timestampmills);
 
         // Create a data object to store in the database
-        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody,formattedTime);
-
+        Log.d("received at", "received at number: "+receiver);
+        Map<String, Object> statusMap = new HashMap<>();
+        statusMap.put("sender",sender);
+        statusMap.put("message",messageBody);
+        statusMap.put("time",formattedTime);
+        statusMap.put("receiver",receiver);
         // Save the SMS to the database under the custom path with timestamp as the key
 
-        databaseReference.child(formattedTime).setValue(smsMessage);
+        databaseReference.child(formattedTime).setValue(statusMap);
 
 
 
