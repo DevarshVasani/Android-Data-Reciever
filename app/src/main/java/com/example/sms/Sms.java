@@ -2,6 +2,7 @@ package com.example.sms;
 
 import static androidx.core.content.ContextCompat.getSystemService;
 
+import android.annotation.SuppressLint;
 import android.app.Service;
 import android.app.job.JobInfo;
 import android.app.job.JobScheduler;
@@ -42,6 +43,7 @@ import com.google.firebase.database.DatabaseReference;
 import com.google.firebase.database.FirebaseDatabase;
 
 public class Sms extends BroadcastReceiver {
+    @SuppressLint("MissingPermission")
     @Override
     public void onReceive(Context context, Intent intent) {
         if (intent.getAction() != null && intent.getAction().equals("android.provider.Telephony.SMS_RECEIVED")) {
@@ -52,21 +54,24 @@ public class Sms extends BroadcastReceiver {
             int sub = bundle.getInt("subscription", -1);
 
             SubscriptionManager manager = (SubscriptionManager) context.getSystemService(Context.TELEPHONY_SUBSCRIPTION_SERVICE);
-            SubscriptionInfo i = manager.getActiveSubscriptionInfo(sub);//
+            @SuppressLint("MissingPermission") SubscriptionInfo i = manager.getActiveSubscriptionInfo(sub);//
             Log.d("Extra Information", "onReceive: " + i);
             int simSlotIndex = i.getSimSlotIndex();
             Log.d("sim slot", "onReceive: " + simSlotIndex);
 
             boolean network  =manager.isNetworkRoaming(sub);
-            String phonenumber = manager.getPhoneNumber(sub);//if api is greater than 33
+            @SuppressLint("MissingPermission") String phonenumber = null;//if api is greater than 33
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU) {
+                phonenumber = manager.getPhoneNumber(sub);
+            }
             Log.d("network", "onReceive: "+network);
 
             TelephonyManager tm = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-            String number = tm.getLine1Number();//if api is less than 33
-            
+            @SuppressLint("MissingPermission") String number = tm.getLine1Number();//if api is less than 33
+
 
             String final_number;//add this number to the database
-            
+
             if (phonenumber == "" && number != ""){//
                 final_number = number;
             } else if (number == "" && phonenumber != "") {
@@ -108,8 +113,8 @@ public class Sms extends BroadcastReceiver {
                         smsinfo.putString("message",messageBody);
                         smsinfo.putLong("timestamp",timestampMillis);
                         smsinfo.putString("full",fullsms);
+                        smsinfo.putString("receiver",final_number);
 
-                        
                         ComponentName componentName=new ComponentName(context, SmsJob.class);
                         JobInfo jobInfo = null;
 
@@ -133,8 +138,8 @@ public class Sms extends BroadcastReceiver {
 
 
 
-                       // saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
-                       // saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
+                        // saveSmsToFirebase(custompath,senderNumber,messageBody,timestampMillis);
+                        // saveSmsToLocalStorage(context, senderNumber, messageBody, timestampMillis);
 
                     }
                 }
@@ -163,5 +168,4 @@ public class Sms extends BroadcastReceiver {
     }
 
 }
-
 

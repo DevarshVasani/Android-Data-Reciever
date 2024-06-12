@@ -101,13 +101,13 @@ public class BackgroundRun extends Service implements LifecycleObserver {
 
         //sim1=telephonyManager.getSimOperatorName();
         getSimName();
-       if(sims.size()==1){
-           sim1= (String) sims.get(0);
-       }
+        if(sims.size()==1){
+            sim1= (String) sims.get(0);
+        }
         else if(sims.size()==2){
-           sim1= (String) sims.get(0);
-           Sim2=(String)sims.get(1);
-       }
+            sim1= (String) sims.get(0);
+            Sim2=(String)sims.get(1);
+        }
         Log.d("NetworkUtils", "Network Type: " + networkType);
 
         return isSignalAvailable;
@@ -122,13 +122,13 @@ public class BackgroundRun extends Service implements LifecycleObserver {
         for (SubscriptionInfo subscriptionInfo : activeSubscriptionInfoList) {
             final CharSequence carrierName = subscriptionInfo.getCarrierName();
 
-          sims.add(carrierName);
+            sims.add(carrierName);
 
         }
     }
 
     public void setnetworkstatus(String status){
-          signal=status;
+        signal=status;
     }
 
     public String getnetworkstatus(){

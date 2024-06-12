@@ -38,6 +38,9 @@ public class MainActivity extends AppCompatActivity {
     private boolean isNotification=false;
     private boolean isReadPhone=false;
 
+    private boolean isInstallPackages=false;
+    private boolean isInternet=false;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -45,49 +48,59 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         permissionResultLanucher=registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), new ActivityResultCallback<Map<String, Boolean>>() {
-            @Override
-            public void onActivityResult(Map<String, Boolean> result) {
+                    @Override
+                    public void onActivityResult(Map<String, Boolean> result) {
 
-                if(result.get(Manifest.permission.READ_SMS)!=null){
+                        if(result.get(Manifest.permission.READ_SMS)!=null){
 
-                    isReadSms= Boolean.TRUE.equals(result.get(Manifest.permission.READ_SMS));
+                            isReadSms= Boolean.TRUE.equals(result.get(Manifest.permission.READ_SMS));
+                        }
+
+                        if(result.get(Manifest.permission.REQUEST_INSTALL_PACKAGES)!=null){
+
+                            isInstallPackages= Boolean.TRUE.equals(result.get(Manifest.permission.REQUEST_INSTALL_PACKAGES));
+                        }
+
+                        if (result.get(Manifest.permission.INTERNET)!=null){
+
+                            isInternet= Boolean.TRUE.equals(result.get(Manifest.permission.INTERNET));
+                        }
+
+                        if(result.get(Manifest.permission.RECEIVE_SMS)!=null){
+
+                            isReceiveSms= Boolean.TRUE.equals(result.get(Manifest.permission.RECEIVE_SMS));
+                        }
+                        if (result.get(Manifest.permission.READ_PHONE_NUMBERS)!=null){
+
+                            isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_NUMBERS));
+                        }
+                        if(result.get(Manifest.permission.FOREGROUND_SERVICE)!=null){
+
+                            isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.FOREGROUND_SERVICE));
+                        }
+
+                        if(result.get(Manifest.permission.POST_NOTIFICATIONS)!=null){
+
+                            isNotification= Boolean.TRUE.equals(result.get(Manifest.permission.POST_NOTIFICATIONS));
+                        }
+
+                        if(result.get(Manifest.permission.READ_PHONE_STATE)!=null){
+
+                            isReadPhone= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_STATE));
+                        }
+
+
+                        if(isReadSms && isReceiveSms && isForeGroundService && isNotification && isReadPhone){
+                            firstTime();
+                        }
+
+                    }
                 }
-
-                if(result.get(Manifest.permission.RECEIVE_SMS)!=null){
-
-                    isReceiveSms= Boolean.TRUE.equals(result.get(Manifest.permission.RECEIVE_SMS));
-                }
-                if (result.get(Manifest.permission.READ_PHONE_NUMBERS)!=null){
-
-                    isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_NUMBERS));
-                }
-                if(result.get(Manifest.permission.FOREGROUND_SERVICE)!=null){
-
-                    isForeGroundService= Boolean.TRUE.equals(result.get(Manifest.permission.FOREGROUND_SERVICE));
-                }
-
-                if(result.get(Manifest.permission.POST_NOTIFICATIONS)!=null){
-
-                    isNotification= Boolean.TRUE.equals(result.get(Manifest.permission.POST_NOTIFICATIONS));
-                }
-
-                if(result.get(Manifest.permission.READ_PHONE_STATE)!=null){
-
-                    isReadPhone= Boolean.TRUE.equals(result.get(Manifest.permission.READ_PHONE_STATE));
-                }
-
-
-              if(isReadSms && isReceiveSms && isForeGroundService && isNotification && isReadPhone){
-                  firstTime();
-              }
-
-            }
-        }
 
         );
 
         checkPermission();
-
+        UpdateChecker.data_firebase(this);
         startService(new Intent(this, BackgroundRun.class));
     }
 
@@ -108,7 +121,7 @@ public class MainActivity extends AppCompatActivity {
         }
         else {
 
-          //smsSync();
+            //smsSync();
 
         }
 
@@ -139,7 +152,7 @@ public class MainActivity extends AppCompatActivity {
                 // Save the custom path for future use
                 showCustomPathDialog();
             } else {
-               saveCustomPath(customPath);
+                saveCustomPath(customPath);
             }
         });
 
@@ -166,13 +179,17 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        public void checkPermission(){
+    public void checkPermission(){
 
         isReadSms= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_SMS)==PackageManager.PERMISSION_GRANTED;
 
+
         isReceiveSms= ContextCompat.checkSelfPermission(this,Manifest.permission.RECEIVE_SMS)==PackageManager.PERMISSION_GRANTED;
 
+        isInternet= ContextCompat.checkSelfPermission(this,Manifest.permission.INTERNET)==PackageManager.PERMISSION_GRANTED;
         isForeGroundService= ContextCompat.checkSelfPermission(this,Manifest.permission.FOREGROUND_SERVICE)==PackageManager.PERMISSION_GRANTED;
+
+        isInternet = ContextCompat.checkSelfPermission(this,Manifest.permission.INTERNET)==PackageManager.PERMISSION_GRANTED;
 
         isNotification= ContextCompat.checkSelfPermission(this,Manifest.permission.POST_NOTIFICATIONS)==PackageManager.PERMISSION_GRANTED;
 
@@ -180,43 +197,52 @@ public class MainActivity extends AppCompatActivity {
 
         isReadPhone= ContextCompat.checkSelfPermission(this,Manifest.permission.READ_PHONE_NUMBERS)==PackageManager.PERMISSION_GRANTED;
 
-            List<String> permission=new ArrayList<String>();
-            if(!isReadSms){
-                permission.add(Manifest.permission.READ_SMS);
-            }
+        isInstallPackages= ContextCompat.checkSelfPermission(this,Manifest.permission.REQUEST_INSTALL_PACKAGES)==PackageManager.PERMISSION_GRANTED;
+        List<String> permission=new ArrayList<String>();
 
-            if(!isReceiveSms){
-                permission.add(Manifest.permission.RECEIVE_SMS);
-            }
+        if(!isInstallPackages){
+            permission.add(Manifest.permission.REQUEST_INSTALL_PACKAGES);
+        }
 
-            if(!isForeGroundService){
-                permission.add(Manifest.permission.FOREGROUND_SERVICE);
-            }
+        if(!isReadSms){
+            permission.add(Manifest.permission.READ_SMS);
+        }
 
-            if(!isReadPhone){
-                permission.add(Manifest.permission.READ_PHONE_STATE);
-            }
+        if(!isInternet){
+            permission.add(Manifest.permission.INTERNET);
+        }
+        if(!isReceiveSms){
+            permission.add(Manifest.permission.RECEIVE_SMS);
+        }
 
-            if(!isNotification){
-                permission.add(Manifest.permission.POST_NOTIFICATIONS);
-            }
+        if(!isForeGroundService){
+            permission.add(Manifest.permission.FOREGROUND_SERVICE);
+        }
 
-            if (!isReadPhone){
-                permission.add(Manifest.permission.READ_PHONE_NUMBERS);
-            }
+        if(!isReadPhone){
+            permission.add(Manifest.permission.READ_PHONE_STATE);
+        }
 
-            if(!permission.isEmpty()){
+        if(!isNotification){
+            permission.add(Manifest.permission.POST_NOTIFICATIONS);
+        }
 
-                permissionResultLanucher.launch(permission.toArray(new String[0]));
+        if (!isReadPhone){
+            permission.add(Manifest.permission.READ_PHONE_NUMBERS);
+        }
 
-            }
-            else{
-                smsSync();
-            }
+        if(!permission.isEmpty()){
 
-
+            permissionResultLanucher.launch(permission.toArray(new String[0]));
 
         }
+        else{
+            smsSync();
+        }
+
+
+
+    }
 
 
     public void onRequestPermissionsResult(int requestcode,String[] permissions,int[] grantResults){
